@@ -125,6 +125,8 @@ const char *config_get_config_dir()
 #else
 #ifdef __APPLE__
 	base_config_dir = strdup("/var/db");
+#elif __ANDROID__
+	base_config_dir = strdup("/data/local/tmp/lib");
 #else
 	base_config_dir = strdup("/var/lib");
 #endif
