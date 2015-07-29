@@ -49,8 +49,13 @@
 #include "client.h"
 #include "conf.h"
 
+#ifdef __ANDROID__
+static const char *socket_path = "/data/local/tmp/usbmuxd";
+static const char *lockfile = "/data/local/tmp/usbmuxd.pid";
+#else
 static const char *socket_path = "/var/run/usbmuxd";
 static const char *lockfile = "/var/run/usbmuxd.pid";
+#endif
 
 int should_exit;
 int should_discover;
@@ -159,7 +164,7 @@ static void set_signal_handlers(void)
 	sigaction(SIGUSR2, &sa, NULL);
 }
 
-#if defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__ANDROID__)
 static int ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *timeout, const sigset_t *sigmask)
 {
 	int ready;

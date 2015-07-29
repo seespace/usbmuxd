@@ -194,7 +194,7 @@ static int send_packet(struct mux_device *dev, enum mux_protocol proto, void *he
 			hdrlen = 0;
 			break;
 		case MUX_PROTO_TCP:
-			hdrlen = sizeof(struct tcphdr);
+			hdrlen = sizeof(struct tcphdr_bsd);
 			break;
 		default:
 			usbmuxd_log(LL_ERROR, "Invalid protocol %d for outgoing packet (dev %d hdr %p data %p len %d)", proto, dev->id, header, data, length);
@@ -258,7 +258,7 @@ static uint16_t find_sport(struct mux_device *dev)
 
 static int send_anon_rst(struct mux_device *dev, uint16_t sport, uint16_t dport, uint32_t ack)
 {
-	struct tcphdr th;
+	struct tcphdr_bsd th;
 	memset(&th, 0, sizeof(th));
 	th.th_sport = htons(sport);
 	th.th_dport = htons(dport);
@@ -274,7 +274,7 @@ static int send_anon_rst(struct mux_device *dev, uint16_t sport, uint16_t dport,
 
 static int send_tcp(struct mux_connection *conn, uint8_t flags, const unsigned char *data, int length)
 {
-	struct tcphdr th;
+	struct tcphdr_bsd th;
 	memset(&th, 0, sizeof(th));
 	th.th_sport = htons(conn->sport);
 	th.th_dport = htons(conn->dport);
@@ -368,7 +368,7 @@ int device_start_connect(int device_id, uint16_t dport, struct mux_client *clien
 	conn->tx_win = 131072;
 	conn->rx_recvd = 0;
 	conn->flags = 0;
-	conn->max_payload = USB_MTU - sizeof(struct mux_header) - sizeof(struct tcphdr);
+	conn->max_payload = USB_MTU - sizeof(struct mux_header) - sizeof(struct tcphdr_bsd);
 
 	conn->ob_buf = malloc(CONN_OUTBUF_SIZE);
 	conn->ob_capacity = CONN_OUTBUF_SIZE;
@@ -616,7 +616,7 @@ static void device_control_input(struct mux_device *dev, unsigned char *payload,
  * @param payload Payload data.
  * @param payload_length Number of bytes in payload.
  */
-static void device_tcp_input(struct mux_device *dev, struct tcphdr *th, unsigned char *payload, uint32_t payload_length)
+static void device_tcp_input(struct mux_device *dev, struct tcphdr_bsd *th, unsigned char *payload, uint32_t payload_length)
 {
 	uint16_t sport = ntohs(th->th_dport);
 	uint16_t dport = ntohs(th->th_sport);
@@ -769,7 +769,7 @@ void device_data_input(struct usb_device *usbdev, unsigned char *buffer, uint32_
 		return;
 	}
 
-	struct tcphdr *th;
+	struct tcphdr_bsd *th;
 	unsigned char *payload;
 	uint32_t payload_length;
 
@@ -791,13 +791,13 @@ void device_data_input(struct usb_device *usbdev, unsigned char *buffer, uint32_
 			device_control_input(dev, payload, payload_length);
 			break;
 		case MUX_PROTO_TCP:
-			if(length < (mux_header_size + sizeof(struct tcphdr))) {
+			if(length < (mux_header_size + sizeof(struct tcphdr_bsd))) {
 				usbmuxd_log(LL_ERROR, "Incoming TCP packet is too small (%d)", length);
 				return;
 			}
-			th = (struct tcphdr *)((char*)mhdr+mux_header_size);
+			th = (struct tcphdr_bsd *)((char*)mhdr+mux_header_size);
 			payload = (unsigned char *)(th+1);
-			payload_length = length - sizeof(struct tcphdr) - mux_header_size;
+			payload_length = length - sizeof(struct tcphdr_bsd) - mux_header_size;
 			device_tcp_input(dev, th, payload, payload_length);
 			break;
 		default:
